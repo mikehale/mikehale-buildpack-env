@@ -5,6 +5,9 @@
 set -e
 
 # Paths.
+mkdir -p $1
+mkdir -p $2
+
 BIN_DIR=$(cd $(dirname $0); pwd) # absolute path
 ROOT_DIR=$(dirname $BIN_DIR)
 BUILD_DIR=$(cd $1; pwd)
