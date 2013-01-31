@@ -2,7 +2,7 @@
 #
 # usage: bin/compile <build-dir> <cache-dir> 
 
-set -ex
+set -e
 
 # Paths.
 BIN_DIR=$(cd $(dirname $0); pwd) # absolute path
@@ -77,4 +77,9 @@ Priority: optional
 Description: emacs
 EOF
     fakeroot dpkg-deb --build $INSTALL_DIR $CACHE_DIR/emacs_${EMACS_VERSION}_amd64.deb
+fi
+
+if [ ! -d $HOME/.emacs.d ]; then
+    echo "-----> Installing emacs.d"
+    rsync -av $ROOT_DIR/.emacs.d $HOME/
 fi
