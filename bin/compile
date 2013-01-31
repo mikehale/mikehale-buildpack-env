@@ -7,22 +7,74 @@ set -ex
 # Paths.
 BIN_DIR=$(cd $(dirname $0); pwd) # absolute path
 ROOT_DIR=$(dirname $BIN_DIR)
-BUILD_DIR=$1
-CACHE_DIR=$2
+BUILD_DIR=$(cd $1; pwd)
+CACHE_DIR=$(cd $2; pwd)
+INSTALL_DIR=$CACHE_DIR/install
+#TEMP_DIR=$(mktemp -d -t buildpack.XXXXXXXXXX)
 
 # Sanitizing environment variables
 
 unset GIT_DIR
-
 cd $BUILD_DIR
 
-echo '-----> Fetching .vim configuration'
+# Ensure dirs are created
 
-git clone git://github.com/ricardochimal/vim-dotfiles.git .vim
-cd .vim
-git submodule init
-git submodule update
-cd ..
+mkdir -p $BUILD_DIR
+mkdir -p $CACHE_DIR
+mkdir -p $INSTALL_DIR
 
-echo '-----> Linking .vimrc to managed configuration'
-ln -s .vim/vimrc .vimrc
+# Build Settings
+
+EMACS_VERSION="24.2"
+PREFIX=/usr/local
+
+# Do it!
+
+echo "-----> Building Emacs ${EMACS_VERSION}"
+
+if [ ! -e $CACHE_DIR/emacs-${EMACS_VERSION}.tar.bz2 ]; then
+  echo "-----> Fetching"
+  curl --location http://ftpmirror.gnu.org/emacs/emacs-${EMACS_VERSION}.tar.bz2 > $CACHE_DIR/emacs-${EMACS_VERSION}.tar.bz2
+fi
+
+if [ ! -d $CACHE_DIR/emacs-${EMACS_VERSION} ]; then
+  echo "-----> Unpacking"
+  tar -jxvf $CACHE_DIR/emacs-${EMACS_VERSION}.tar.bz2 -C $CACHE_DIR
+fi
+
+if apt-cache policy libncurses5-dev|grep Installed|grep '(none)'ls j; then
+    apt-get -y install libncurses5-dev
+fi
+
+if [ ! -e $CACHE_DIR/emacs-${EMACS_VERSION}/.configured ]; then
+    echo "-----> Configuring"
+    (cd $CACHE_DIR/emacs-${EMACS_VERSION}; ./configure --prefix=$PREFIX)
+    touch $CACHE_DIR/emacs-${EMACS_VERSION}/.configured
+fi
+
+if [ ! -e $CACHE_DIR/emacs-${EMACS_VERSION}/.installed ]; then
+    echo "-----> Making"
+    mkdir -p $INSTALL_DIR$PREFIX
+    (
+	cd $CACHE_DIR/emacs-${EMACS_VERSION}
+	make
+	make install DESTDIR=$INSTALL_DIR
+    )
+    touch $CACHE_DIR/emacs-${EMACS_VERSION}/.installed
+fi
+
+if [ ! -e $CACHE_DIR/emacs_${EMACS_VERSION}_amd64.deb ]; then
+    echo "-----> Building .deb"
+    mkdir -p -m 0755 $INSTALL_DIR/DEBIAN
+
+    cat > $INSTALL_DIR/DEBIAN/control <<EOF
+Package: emacs
+Version: $EMACS_VERSION
+Architecture: amd64
+Maintainer: "Michael Hale" <mhale@heroku.com>
+Section: heroku
+Priority: optional
+Description: emacs
+EOF
+    fakeroot dpkg-deb --build $INSTALL_DIR $CACHE_DIR/emacs_${EMACS_VERSION}_amd64.deb
+fi

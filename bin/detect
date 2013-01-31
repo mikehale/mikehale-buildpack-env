@@ -1,4 +1,4 @@
 #!/bin/sh
 
-echo "Ricardo's Dev Environment"
+echo "Michael's Dev Environment"
 exit 0
