@@ -42,7 +42,7 @@ if [ ! -d $CACHE_DIR/emacs-${EMACS_VERSION} ]; then
   tar -jxvf $CACHE_DIR/emacs-${EMACS_VERSION}.tar.bz2 -C $CACHE_DIR
 fi
 
-if apt-cache policy libncurses5-dev|grep Installed|grep '(none)'ls j; then
+if apt-cache policy libncurses5-dev|grep Installed|grep '(none)'; then
     apt-get -y install libncurses5-dev
 fi
 
@@ -77,6 +77,11 @@ Priority: optional
 Description: emacs
 EOF
     fakeroot dpkg-deb --build $INSTALL_DIR $CACHE_DIR/emacs_${EMACS_VERSION}_amd64.deb
+fi
+
+if apt-cache policy emacs|grep Installed|grep '(none)'; then
+    echo "-----> Installing emacs deb"
+    dpkg -i $CACHE_DIR/emacs_${EMACS_VERSION}_amd64.deb
 fi
 
 if [ ! -d $HOME/.emacs.d ]; then
