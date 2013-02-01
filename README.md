@@ -15,3 +15,4 @@
 * install heroku toolbelt
 * new versions of ruby
 * include tools in PATH
+* use slugs via anvil to allow caching of builds between machines
